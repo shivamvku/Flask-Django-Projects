@@ -1,602 +1,211 @@
-from flask import Flask,render_template,flash,redirect,request,url_for,session,logging,abort
+from flask import Flask,render_template,flash,redirect,request,url_for,session,logging
 from flask_mysqldb import MySQL
 from wtforms import Form,StringField,TextAreaField,PasswordField,validators,SelectField
+from flask_wtf.file import FileField,FileRequired
 from wtforms.fields.html5 import DateField
 from wtforms.validators import InputRequired,Length,Email
 from passlib.hash import sha256_crypt
-from db import *
+# from db import *
 from flask import Flask
 from flask_mail import Mail, Message#pip install flask_mail
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask import Flask
+from flask import Flask, flash, redirect, render_template, request, session, abort
 import os
 from functools import wraps
-app=Flask(__name__)
-# app.config['SECRET_KEY']='Thisissupposedtobesecret!'
-gmail=Mail(app)
-app.config['MAIL_SERVER']='smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'shivam.vku@gmail.com'
-app.config['MAIL_PASSWORD'] = '7569880950vineet'
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-gmail = Mail(app)
+from werkzeug.utils import secure_filename
 
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'flaskappemp'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-mysql=MySQL(app)#https://realpython.com/blog/python/the-minimum-viable-test-suite/
+#<<<<----------------------------my uploads------------------------------>>>>>
+from flask_wtf import FlaskForm
+import os
+from flask import Flask, request, redirect, url_for, flash, render_template
+from werkzeug.utils import secure_filename
+from werkzeug.wsgi import SharedDataMiddleware
+from flask import send_from_directory
+UPLOAD_FOLDER = 'F:\\employeeportal1\\images'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
-@app.route('/')
-def home():
-  return render_template('home.html')
+app = Flask(__name__)
 
-# @app.route('/login12')
-# def login12():
-#   return render_template('login12.html')
-#----------------------------leave------------------
-class Leave(Form):
-  From_email = StringField('From_Email', [validators.Length(min =2 , max = 20)])
-  To_email = StringField('To_Email', [validators.Length(min =2 , max = 20)]) 
-  From_date=DateField('From_date', format='%Y-%m-%d')
-  To_date=DateField('To_date', format='%Y-%m-%d')
-  Reason = StringField('Reason', [validators.Length(min =2 , max = 20)]) 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-@app.route('/leavefrom', methods = ['GET', 'POST'])
+# -----------------------------Login/logout--------------------------------
 
-def councling():
-   form = Leave(request.form)
-   print("hiii")
-   if request.method == 'POST' and form.validate():
-       print('hello')
-       From_email = form.From_email.data 
-       To_email = form.To_email.data 
-       From_date = form.From_date.data
-       To_date = form.To_date.data
-       Reason = form.Reason.data
-       msg = Message('Hello', sender = "'"+From_email+"'", recipients = [(To_email)])
-       msg.body = "Hi  welcome to Digital lync Academy "
-       gmail.send(msg)
-       return render_template('home.html',form = form)
-   return render_template('leave.html',form = form)
+# @app.route('/')
+# def home():
+#     return render_template('home.html')
+# @app.route('/')
 
+class ParttimeForm(FlaskForm):
 
-#----------------------------------------------------------
-@app.route('/home')
-def index():
-  cur=mysql.connection.cursor()
-  cur.execute('''SELECT * FROM examle''')
-  rv=cur.fetchall()
-  # return str(rv)
-
-  return render_template('index.html',rv=rv)
-@app.route('/home1')
-def home1():
-  return render_template('home1.py')
-class RegisterForm(Form):
   name=StringField('Name',[validators.Length(min=1,max=50)])
-  father_mother_name=StringField('father_mother_name',[validators.Length(min=4,max=50)])
-  date_of_brith = DateField('date_of_brith', format='%Y-%m-%d')
-  address=StringField('address',[validators.Length(min=1,max=50)])
-  aadhar_number=StringField('aadhar_number',[validators.Length(min=1,max=50)])
-  mobile = StringField('mobile',[validators.Length(min=10,max =13 )])
-  email=StringField('email',[validators.Length(min=2,max=50)])
-  alternate_no=StringField('alternate_no',[validators.Length(min=6,max=50)])
-  type1=SelectField(u'type',choices=[('None','None'),('FULLTIME','FULLTIME'),('PARTTIME','PARTTIME'),('INTENDS','INTENDS')])
+  fatherormothername=StringField('FatherorMother name',[validators.Length(min=1,max=50)])
+  dateofbirth = DateField('Date of Birth', format='%Y-%m-%d')
+  address = StringField('Address',[validators.Length(min=1,max=300)])
+  phone = StringField('Phoneno',[validators.Length(min=10,max =13 )])
+  email=StringField('Email Id',[validators.Length(min=2,max=50)])
+  alternateno = StringField('Alternate no',[validators.Length(min=10,max =13 )])
+  sscmemo = FileField('SSC memo')
+  intermemo = FileField('Inter memo')
+  degreememo = FileField('Degree memo')
+  aadharcard = FileField('Aadhar card')
+  pancard = FileField('Pan card')
+  dateofjoining = DateField('Date of Joining', format='%Y-%m-%d')
+  post = SelectField(u'Post', choices=[('None','None'),('Trainer','Trainer'),('Mentor','Mentor')])
+  course = SelectField(u'Course', choices=[('None','None'),('UI','UI'),('Python','Python'),('Marketing','Marketing')])
+  payrole = StringField('Payrole',[validators.Length(min=1,max =15 )])
+  attendance = DateField('Attendance', format='%Y-%m-%d')
+  remark = StringField('Remark', [validators.Length(min =2 , max = 50)])
 
-@app.route('/register', methods = ['GET', 'POST'])
-def register():
-   form = RegisterForm(request.form)
-   if request.method == 'POST' and form.validate():
-       name = form.name.data
-       father_mother_name = form.father_mother_name.data
-       date_of_brith = form.date_of_brith.data
-       address = form.address.data
-       aadhar_number = form.aadhar_number.data
-       mobile = form.mobile.data
-       email = form.email.data
-       alternate_no = form.alternate_no.data
-       type1 = form.type1.data    
-       # create cursor
-       print(aadhar_number)
-       cur = mysql.connection.cursor()
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-       cur.execute("INSERT INTO employees(Name,Father_Mother_Name,Date_Brith,Address,Aadhar_number,Phone_number,Email_id,Alternate_no,Type) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",(name,father_mother_name,date_of_brith,address,aadhar_number,mobile,email,alternate_no,type1))
+@app.route('/upload_file', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        print(file.filename)
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # return redirect(url_for('uploaded_file',filename=filename))
+    return render_template('upload.html')
 
-       #commit to DB
+#
+@app.route('/parttime', methods = ['GET', 'POST'])
 
-       mysql.connection.commit()
+def parttime():
 
-       #close connection
-       cur.close()
+    form = ParttimeForm(request.form)
+    if request.method == 'POST' and form.validate():
+        name = form.name.data
+        fatherormothername = form.fatherormothername.data
+        dateofbirth = form.dateofbirth.data
+        address = form.address.data
+        phone = form.phone.data
+        email = form.email.data
+        alternateno = form.alternateno.name
+        dateofjoining = form.dateofjoining.data
+        post = form.post.name
+        course = form.course.data
+        payrole = form.payrole.data
+        attendance = form.attendance.data
+        remark = form.remark.data
 
-       flash('You are now registered and can log in','success')
+    # if form.validate_on_submit():
+    #     sscmemo = form.sscmemo.data
+    #     intermemo = form.intermemo.data
+    #     degreememo = form.degreememo.data
+    #     aadharcard = form.aadharcard.data
+    #     pancard = form.pancard.data
+        # filename = secure_filename(sscmemo.filename)
+        # print(filename)
+        # sscmemo.save(os.path.join(app.instance_path, 'photos', filename))
 
-       return redirect(url_for('home'))
+        # return '<h1>'+ name + fatherormothername + str(dateofbirth) + address + phone + email + alternateno + str(dateofjoining) + post + course + payrole + str(attendance) + remark + '</h1>'
+        # return "<h1>"'sucess'"</h1>"
+    return render_template('parttime.html',form = form)
 
-   return render_template('register.html',form = form)
+class FulltimeForm(Form):
+  name=StringField('Name',[validators.Length(min=1,max=50)])
+  fatherormothername=StringField('FatherorMother name',[validators.Length(min=1,max=50)])
+  dateofbirth = DateField('Date of Birth', format='%Y-%m-%d')
+  address = StringField('Address',[validators.Length(min=1,max=300)])
+  phone = StringField('Phoneno',[validators.Length(min=10,max =13 )])
+  email=StringField('Email Id',[validators.Length(min=2,max=50)])
+  alternateno = StringField('Alternate no',[validators.Length(min=10,max =13 )])
+  sscmemo = StringField('SSC Memo',[validators.Length(min=10,max =13 )])
+  intermemo = StringField('Inter Memo',[validators.Length(min=10,max =13 )])
+  degreememo = StringField('Degree Memo ',[validators.Length(min=10,max =13 )])
+  aadharcard = StringField('Aadhar Card',[validators.Length(min=10,max =20 )])
+  pancard = StringField('Pan Card',[validators.Length(min=10,max =20 )])
+  dateofjoining = DateField('Date of Joining', format='%Y-%m-%d')
+  post = SelectField(u'Post', choices=[('None','None'),('Manager','Manager'),('Leader','Leader'),('Executive','Executive')])
+  payrole = StringField('Payrole',[validators.Length(min=3,max =50 )])
+  attendance = DateField('Attendance', format='%Y-%m-%d')
+  remark = StringField('Remark', [validators.Length(min =2 , max = 50)]) 
 
-@app.route('/login',methods = ['GET','POST'])
-def login():
-   if request.method == 'POST':
-       #get form fields
-
-       username = request.form['username']
-       password_candidate = request.form['password']
-
-       # Create cursor
-       cur = mysql.connection.cursor()
-
-       # get user by username
-
-       result = cur.execute("SELECT * FROM users WHERE username = %s",[username])
-       print('name:',username)
-       if result > 0:
-
-           data = cur.fetchone()
-           password = data['password']
-
-           # print('password1',password1);
-           print('password:',password_candidate)
-
-           # if sha256_crypt.verify(password_candidate,password):
-           if (password_candidate==password):
-
-
-               #app.logger.info('Passwords Matched')
-               session['logged_in'] = True
-               session['username'] = username
-               # print('password11',password_candidate);
-               # print('password12:',password)
-
-               flash('You are now logged in','success')
-               return redirect(url_for('about'))
-           else:
-               error = 'Invalid Login'
-               #app.logger.info('Passwords Not matched')
-               return render_template('login.html',error=error)
-           # close connection
-           cur.close()
-       else:
-           #app.logger.info('No user')
-           error:'Username not found'
-           return render_template('login.html',error=error)
-
-   return render_template('login.html')
-def is_logged_in(f):
-   @wraps(f)
-   def wrap(*args, **kwargs):
-       if 'logged_in' in session:
-           return f(*args, **kwargs)
-       else:
-           flash('Unauthorized, Please Login','danger')
-           return redirect(url_for('login'))
-   return wrap
-
-   return render_template('login.html')
-# Logout
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('You are now logged out','success')
-    return redirect(url_for('login'))
-
-#-----------------------------------------login----------------
-@app.route('/EMPlogin',methods = ['GET','POST'])
-def EMPloginn():
-   if request.method == 'POST':
-       #get form fields
-
-       username = request.form['username']
-       password_candidate = request.form['password']
-
-       # Create cursor
-       cur = mysql.connection.cursor()
-
-       # get user by username
-
-       result = cur.execute("SELECT * FROM users WHERE username = %s",[username])
-       print('name:',username)
-       if result > 0:
-
-           data = cur.fetchone()
-           password = data['password']
-
-           # print('password1',password1);
-           print('password:',password_candidate)
-
-           # if sha256_crypt.verify(password_candidate,password):
-           if (password_candidate==password):
-
-
-               #app.logger.info('Passwords Matched')
-               session['logged_in'] = True
-               session['username'] = username
-               # print('password11',password_candidate);
-               # print('password12:',password)
-
-               flash('You are now logged in','success')
-               return redirect(url_for('home'))
-           else:
-               error = 'Invalid Login'
-               #app.logger.info('Passwords Not matched')
-               return render_template('login.html',error=error)
-           # close connection
-           cur.close()
-       else:
-           #app.logger.info('No user')
-           error:'Username not found'
-           return render_template('login.html',error=error)
-
-   return render_template('login.html')
-def is_logged_in(f):
-   @wraps(f)
-   def wrap(*args, **kwargs):
-       if 'logged_in' in session:
-           return f(*args, **kwargs)
-       else:
-           flash('Unauthorized, Please Login','danger')
-           return redirect(url_for('login'))
-   return wrap
-
-   return render_template('login.html')
-# Logout
-@app.route('/logout1')
-def EMPlogout():
-    session.clear()
-    flash('You are now logged out','success')
-    return redirect(url_for('EMPlogin'))
-
-
-@app.route('/updateprofile')
-def updateprofile():
-  id=request.args.get('id')
-  print('updateproile::',id)
-  cur=mysql.connection.cursor()
-  cur.execute("SELECT id,st_name,st_email FROM registers WHERE id=%s",[id])
-  rv=cur.fetchall()
-  person=rv[0]
-  print(person)
-  return render_template('update.html',person=person)
-
-@app.route('/updateprofile12')
-def updateprofile12():
-  name=request.args.get('st_name')
-  email=request.args.get('st_email')
   
-  cur=mysql.connection.cursor()
-  cur.execute("SELECT id,st_name,st_email FROM registers WHERE st_name=%s",[name])
-  rv=cur.fetchall()
-  person=rv[0]
-  print(person)
-  a=person['id']
-  print(person['email'])
+@app.route('/fulltime', methods = ['GET', 'POST'])
 
+def fulltime():
+   form = FulltimeForm(request.form)
+   if request.method == 'POST' and form.validate(): 
+       name = form.name.data
+       fatherormothername = form.fatherormothername.data
+       dateofbirth = form.dateofbirth.data
+       address = form.address.data
+       phone = form.phone.data
+       email = form.email.data
+       alternateno = form.alternateno.name
+       sscmemo = form.sscmemo.data 
+       intermemo = form.intermemo.data 
+       degreememo = form.degreememo.data
+       aadharcard = form.aadharcard.data
+       pancard = form.pancard.data
+       dateofjoining = form.dateofjoining.data
+       post = form.post.name
+       payrole = form.payrole.data
+       attendance = form.attendance.data
+       remark = form.remark.data
+       return '<h1>'+ name + fatherormothername + str(dateofbirth) + address + phone + email + alternateno + sscmemo + intermemo + degreememo + aadharcard + pancard + str(dateofjoining) + post + payrole + str(attendance) + remark + '</h1>'
+   return render_template('fulltime.html',form = form)         
 
-  cur=mysql.connection.cursor()
-  cur.execute("UPDATE `registers` SET `name`=%s,`email`=%s WHERE id=%s",[name,email,a])
-  print(name)
-  print(email)
-  print(a)
-  mysql.connection.commit()
+class InternshipForm(Form):
+  name=StringField('Name',[validators.Length(min=1,max=50)])
+  fatherormothername=StringField('FatherorMother name',[validators.Length(min=1,max=50)])
+  dateofbirth = DateField('Date of Birth', format='%Y-%m-%d')
+  address = StringField('Address',[validators.Length(min=1,max=300)])
+  phone = StringField('Phoneno',[validators.Length(min=10,max =13 )])
+  email=StringField('Email Id',[validators.Length(min=2,max=50)])
+  alternateno = StringField('Alternate no',[validators.Length(min=10,max =13 )])
+  sscmemo = StringField('SSC Memo',[validators.Length(min=10,max =13 )])
+  intermemo = StringField('Inter Memo',[validators.Length(min=10,max =13 )])
+  degreememo = StringField('Degree Memo',[validators.Length(min=10,max =13 )])
+  aadharcard = StringField('Aadhar Card',[validators.Length(min=10,max =20)])
+  pancard = StringField('Pan Card',[validators.Length(min=10,max =20 )])
+  dateofjoining = DateField('Date of Joining', format='%Y-%m-%d')
+  department = SelectField(u'Department', choices=[('None','None'),('UI','UI'),('Python','Python'),('Marketing','Marketing')])
+  stipend = StringField('Stipend',[validators.Length(min=3,max =50 )])
+  attendance = DateField('Date of Joining', format='%Y-%m-%d')
+  remark = StringField('Remark', [validators.Length(min =2 , max = 50)]) 
 
-  return redirect(url_for('about'))
+  
+@app.route('/internship', methods = ['GET', 'POST'])
 
-@app.route('/deleteprofile')
-def deleteprofile():
-  id=request.args.get('id')
-  print("delect",id)
-  cur=mysql.connection.cursor()
-  cur.execute("DELETE FROM `users`  WHERE id=%s",[id])
-  mysql.connection.commit()
- 
-  return redirect(url_for('about'))
+def internship():
+   form = InternshipForm(request.form)
+   if request.method == 'POST' and form.validate(): 
+       name = form.name.data
+       fatherormothername = form.fatherormothername.data
+       dateofbirth = form.dateofbirth.data
+       address = form.address.data
+       phone = form.phone.data
+       email = form.email.data
+       alternateno = form.alternateno.name
+       sscmemo = form.sscmemo.data 
+       intermemo = form.intermemo.data 
+       degreememo = form.degreememo.data
+       aadharcard = form.aadharcard.data
+       pancard = form.pancard.data
+       dateofjoining = form.dateofjoining.data
+       department = form.department.data
+       stipend = form.stipend.data
+       attendance = form.attendance.data
+       remark = form.remark.data
+       return '<h1>'+ name + fatherormothername + str(dateofbirth) + address + phone + email + alternateno + sscmemo + intermemo + degreememo + aadharcard + pancard + str(dateofjoining) + department + stipend + str(attendance) + remark + '</h1>'
+   return render_template('internship.html',form = form)         
+
+#------------------------------------pase-2------------------------------------------------
 
 
 if __name__=='__main__':
   app.secret_key = os.urandom(12)
-  app.run(host='localhost', port=5000, debug=True)
-
-from flask import Flask,render_template,flash,redirect,request,url_for,session,logging,abort
-from flask_mysqldb import MySQL
-from wtforms import Form,StringField,TextAreaField,PasswordField,validators,SelectField
-from wtforms.fields.html5 import DateField
-from wtforms.validators import InputRequired,Length,Email
-from passlib.hash import sha256_crypt
-from db import *
-from flask import Flask
-from flask_mail import Mail, Message#pip install flask_mail
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask import Flask
-import os
-from functools import wraps
-app=Flask(__name__)
-# app.config['SECRET_KEY']='Thisissupposedtobesecret!'
-gmail=Mail(app)
-app.config['MAIL_SERVER']='smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'shivam.vku@gmail.com'
-app.config['MAIL_PASSWORD'] = '7569880950vineet'
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-gmail = Mail(app)
-
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'flaskappemp'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-mysql=MySQL(app)#https://realpython.com/blog/python/the-minimum-viable-test-suite/
-
-@app.route('/')
-def home():
-  return render_template('home.html')
-
-# @app.route('/login12')
-# def login12():
-#   return render_template('login12.html')
-#----------------------------leave------------------
-class Leave(Form):
-  From_email = StringField('From_Email', [validators.Length(min =2 , max = 20)])
-  To_email = StringField('To_Email', [validators.Length(min =2 , max = 20)]) 
-  From_date=DateField('From_date', format='%Y-%m-%d')
-  To_date=DateField('To_date', format='%Y-%m-%d')
-  Reason = StringField('Reason', [validators.Length(min =2 , max = 20)]) 
-
-@app.route('/leavefrom', methods = ['GET', 'POST'])
-
-def councling():
-   form = Leave(request.form)
-   print("hiii")
-   if request.method == 'POST' and form.validate():
-       print('hello')
-       From_email = form.From_email.data 
-       To_email = form.To_email.data 
-       From_date = form.From_date.data
-       To_date = form.To_date.data
-       Reason = form.Reason.data
-       msg = Message('Hello', sender = "'"+From_email+"'", recipients = [(To_email)])
-       msg.body = "Hi  welcome to Digital lync Academy "
-       gmail.send(msg)
-       return render_template('home.html',form = form)
-   return render_template('leave.html',form = form)
-
-
-#----------------------------------------------------------
-@app.route('/home')
-def index():
-  cur=mysql.connection.cursor()
-  cur.execute('''SELECT * FROM examle''')
-  rv=cur.fetchall()
-  # return str(rv)
-
-  return render_template('index.html',rv=rv)
-@app.route('/home1')
-def home1():
-  return render_template('home1.py')
-class RegisterForm(Form):
-  name=StringField('Name',[validators.Length(min=1,max=50)])
-  father_mother_name=StringField('father_mother_name',[validators.Length(min=4,max=50)])
-  date_of_brith = DateField('date_of_brith', format='%Y-%m-%d')
-  address=StringField('address',[validators.Length(min=1,max=50)])
-  aadhar_number=StringField('aadhar_number',[validators.Length(min=1,max=50)])
-  mobile = StringField('mobile',[validators.Length(min=10,max =13 )])
-  email=StringField('email',[validators.Length(min=2,max=50)])
-  alternate_no=StringField('alternate_no',[validators.Length(min=6,max=50)])
-  type1=SelectField(u'type',choices=[('None','None'),('FULLTIME','FULLTIME'),('PARTTIME','PARTTIME'),('INTENDS','INTENDS')])
-
-@app.route('/register', methods = ['GET', 'POST'])
-def register():
-   form = RegisterForm(request.form)
-   if request.method == 'POST' and form.validate():
-       name = form.name.data
-       father_mother_name = form.father_mother_name.data
-       date_of_brith = form.date_of_brith.data
-       address = form.address.data
-       aadhar_number = form.aadhar_number.data
-       mobile = form.mobile.data
-       email = form.email.data
-       alternate_no = form.alternate_no.data
-       type1 = form.type1.data    
-       # create cursor
-       print(aadhar_number)
-       cur = mysql.connection.cursor()
-
-       cur.execute("INSERT INTO employees(Name,Father_Mother_Name,Date_Brith,Address,Aadhar_number,Phone_number,Email_id,Alternate_no,Type) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",(name,father_mother_name,date_of_brith,address,aadhar_number,mobile,email,alternate_no,type1))
-
-       #commit to DB
-
-       mysql.connection.commit()
-
-       #close connection
-       cur.close()
-
-       flash('You are now registered and can log in','success')
-
-       return redirect(url_for('home'))
-
-   return render_template('register.html',form = form)
-
-@app.route('/login',methods = ['GET','POST'])
-def login():
-   if request.method == 'POST':
-       #get form fields
-
-       username = request.form['username']
-       password_candidate = request.form['password']
-
-       # Create cursor
-       cur = mysql.connection.cursor()
-
-       # get user by username
-
-       result = cur.execute("SELECT * FROM users WHERE username = %s",[username])
-       print('name:',username)
-       if result > 0:
-
-           data = cur.fetchone()
-           password = data['password']
-
-           # print('password1',password1);
-           print('password:',password_candidate)
-
-           # if sha256_crypt.verify(password_candidate,password):
-           if (password_candidate==password):
-
-
-               #app.logger.info('Passwords Matched')
-               session['logged_in'] = True
-               session['username'] = username
-               # print('password11',password_candidate);
-               # print('password12:',password)
-
-               flash('You are now logged in','success')
-               return redirect(url_for('about'))
-           else:
-               error = 'Invalid Login'
-               #app.logger.info('Passwords Not matched')
-               return render_template('login.html',error=error)
-           # close connection
-           cur.close()
-       else:
-           #app.logger.info('No user')
-           error:'Username not found'
-           return render_template('login.html',error=error)
-
-   return render_template('login.html')
-def is_logged_in(f):
-   @wraps(f)
-   def wrap(*args, **kwargs):
-       if 'logged_in' in session:
-           return f(*args, **kwargs)
-       else:
-           flash('Unauthorized, Please Login','danger')
-           return redirect(url_for('login'))
-   return wrap
-
-   return render_template('login.html')
-# Logout
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('You are now logged out','success')
-    return redirect(url_for('login'))
-
-#-----------------------------------------login----------------
-@app.route('/EMPlogin',methods = ['GET','POST'])
-def EMPloginn():
-   if request.method == 'POST':
-       #get form fields
-
-       username = request.form['username']
-       password_candidate = request.form['password']
-
-       # Create cursor
-       cur = mysql.connection.cursor()
-
-       # get user by username
-
-       result = cur.execute("SELECT * FROM users WHERE username = %s",[username])
-       print('name:',username)
-       if result > 0:
-
-           data = cur.fetchone()
-           password = data['password']
-
-           # print('password1',password1);
-           print('password:',password_candidate)
-
-           # if sha256_crypt.verify(password_candidate,password):
-           if (password_candidate==password):
-
-
-               #app.logger.info('Passwords Matched')
-               session['logged_in'] = True
-               session['username'] = username
-               # print('password11',password_candidate);
-               # print('password12:',password)
-
-               flash('You are now logged in','success')
-               return redirect(url_for('home'))
-           else:
-               error = 'Invalid Login'
-               #app.logger.info('Passwords Not matched')
-               return render_template('login.html',error=error)
-           # close connection
-           cur.close()
-       else:
-           #app.logger.info('No user')
-           error:'Username not found'
-           return render_template('login.html',error=error)
-
-   return render_template('login.html')
-def is_logged_in(f):
-   @wraps(f)
-   def wrap(*args, **kwargs):
-       if 'logged_in' in session:
-           return f(*args, **kwargs)
-       else:
-           flash('Unauthorized, Please Login','danger')
-           return redirect(url_for('login'))
-   return wrap
-
-   return render_template('login.html')
-# Logout
-@app.route('/logout1')
-def EMPlogout():
-    session.clear()
-    flash('You are now logged out','success')
-    return redirect(url_for('EMPlogin'))
-
-
-@app.route('/updateprofile')
-def updateprofile():
-  id=request.args.get('id')
-  print('updateproile::',id)
-  cur=mysql.connection.cursor()
-  cur.execute("SELECT id,st_name,st_email FROM registers WHERE id=%s",[id])
-  rv=cur.fetchall()
-  person=rv[0]
-  print(person)
-  return render_template('update.html',person=person)
-
-@app.route('/updateprofile12')
-def updateprofile12():
-  name=request.args.get('st_name')
-  email=request.args.get('st_email')
-  
-  cur=mysql.connection.cursor()
-  cur.execute("SELECT id,st_name,st_email FROM registers WHERE st_name=%s",[name])
-  rv=cur.fetchall()
-  person=rv[0]
-  print(person)
-  a=person['id']
-  print(person['email'])
-
-
-  cur=mysql.connection.cursor()
-  cur.execute("UPDATE `registers` SET `name`=%s,`email`=%s WHERE id=%s",[name,email,a])
-  print(name)
-  print(email)
-  print(a)
-  mysql.connection.commit()
-
-  return redirect(url_for('about'))
-
-@app.route('/deleteprofile')
-def deleteprofile():
-  id=request.args.get('id')
-  print("delect",id)
-  cur=mysql.connection.cursor()
-  cur.execute("DELETE FROM `users`  WHERE id=%s",[id])
-  mysql.connection.commit()
- 
-  return redirect(url_for('about'))
-
-
-if __name__=='__main__':
-  app.secret_key = os.urandom(12)
-  app.run(host='localhost', port=5000, debug=True)
-
+  app.run(host='localhost', port=4000, debug=True)
