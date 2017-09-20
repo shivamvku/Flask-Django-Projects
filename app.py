@@ -16,7 +16,7 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 
 #<<<<----------------------------my uploads------------------------------>>>>>
-from flask_wtf import FlaskForm
+from flask_wtf import Form 
 import os
 from flask import Flask, request, redirect, url_for, flash, render_template
 from werkzeug.utils import secure_filename
@@ -36,7 +36,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 #     return render_template('home.html')
 # @app.route('/')
 
-class ParttimeForm(FlaskForm):
+class ParttimeForm(Form):
 
   name=StringField('Name',[validators.Length(min=1,max=50)])
   fatherormothername=StringField('FatherorMother name',[validators.Length(min=1,max=50)])

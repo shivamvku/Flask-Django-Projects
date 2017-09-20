@@ -1,0 +1,80 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+	<br><br>
+
+   <!-- {{form.name}} -->
+  <div class="container-fluid">
+  
+  <div class="row">
+    <div class="col-sm-3" style="background-color:lavender;"></div>
+  <div class="col-sm-6" style="background-color:lavender;">
+  <div class="form-group">
+    <center><h1>PartTime</h1></center>
+  </div>
+
+  {% from "includes/_formhelper.html" import render_field %}
+  <form method="POST" action="#">
+      <div class="form-group">
+        {{render_field(form.name, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.fatherormothername, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.dateofbirth, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.address, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.phone, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.email, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.alternateno, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.sscmemo, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.intermemo, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.degreememo, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.aadharcard, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.pancard, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.dateofjoining, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.post, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.course, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.payrole, class_="form-control")}}
+      </div>
+      
+      <div class="form-group">
+        {{render_field(form.attendance, class_="form-control")}}
+      </div>
+      <div class="form-group">
+        {{render_field(form.remark, class_="form-control")}}
+      </div>
+      <p><input type="submit" class="btn btn-primary" value="Submit"></p>
+  </form>
+  </div>
+  <div class="col-sm-3" style="background-color:lavender;"></div>
+  </div>
+</div>
+
+{% endblock %}
